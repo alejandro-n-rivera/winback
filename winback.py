@@ -15,13 +15,25 @@ class Winback(QWidget):
 		self.setWindowTitle('winback')
 		self.label = QLabel("Drag an image file here.", self)
 		self.setGeometry(300, 300, 300, 300)
-		self.label.move(100,150)
+		self.label.move(100,150)			
+	
+	def dragEnterEvent(self, e):
+	  
+		if e.mimeData():
+			e.accept()
+		else:
+			e.ignore() 
+
+	def dropEvent(self, e):
+		img_path = e.mimeData().text().split("file:///")[1]
+		self.dual_1080p_4K_backg_conv(img_path)
 		
 	# Function to convert image to dual 1080p and 4K monitor desktop backgrounds
 	def dual_1080p_4K_backg_conv(self, img_path):
+		print("LABEL:", self.label.text())
 		
-		# If the IMAGE PATH actually exists...
-		if os.path.exists(img_path):
+		# If the IMAGE PATH actually exists as a file...
+		if os.path.isfile(img_path):
 			self.label.setText(self.label.text() + "\nIMAGE PATH exists. Attempting to open image...")
 			img = Image.open(img_path)
 			width, height = img.size
@@ -44,34 +56,38 @@ class Winback(QWidget):
 			self.label.setText(self.label.text() + "\nNew image created: %s" % final_img_save_path)
 			final_img.save(final_img_save_path)
 
-			if os.name == "nt":
-				import ctypes
-				ctypes.windll.user32.SystemParametersInfoW(20, 0, final_img_save_path, 0)
-				self.label.setText(self.label.text() + "\nDesktop background set.")
+			self.set_windows_background(final_img_save_path)
 				
 		# Else, the IMAGE PATH didn't actually exist.
 		else:
-			self.label.setText(self.label.text() + "\nFile error: File does not exist\nNow exiting...")
-			time.sleep(3)
-			exit(2)
+			self.label.setText(self.label.text() + "\nFILE ERROR: File does not exist.")
 			
-	
-	def dragEnterEvent(self, e):
-	  
-		if e.mimeData():
-			e.accept()
+	def set_windows_background(self, file_path):
+		# Check to make sure that we're running on Windows and that file_path exists
+		if os.name == "nt" and os.path.isfile(file_path):
+			import ctypes
+			#ctypes.windll.user32.SystemParametersInfoW(20, 0, final_img_save_path, 0)
+			SPI_SETDESKWALLPAPER = 20
+			SPIF_UPDATEINIFILE = 1
+			user32 = ctypes.WinDLL('user32', use_last_error=True)
+
+			def errcheck(result, func, args):
+				if not result:
+					raise ctypes.WinError(ctypes.get_last_error())
+				return args
+			
+			user32.LoadStringW.errcheck = errcheck
+			
+			user32.SystemParametersInfoW(SPI_SETDESKWALLPAPER, 0, file_path, SPIF_UPDATEINIFILE)
+			self.label.setText(self.label.text() + "\nDesktop background set.")
+			
+				# Else, the IMAGE PATH didn't actually exist.
 		else:
-			e.ignore() 
-
-	def dropEvent(self, e):
-		img_path = e.mimeData().text()
-		img_path = img_path.split("file:///")[1]
-		self.dual_1080p_4K_backg_conv(img_path)
-
+			self.label.setText(self.label.text() + "OS ERROR: Can only set desktop background on Windows.")
 
 if __name__ == '__main__':
   
 	app = QApplication(sys.argv)
 	wb = Winback()
 	wb.show()
-	app.exec_()	 
+	exit(app.exec_())	 
