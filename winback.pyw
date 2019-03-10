@@ -41,12 +41,12 @@ class Winback(QWidget):
 			# Force 7680 x 2160 dimensions (might look ugly for some images)
 			if (width, height) != (7680, 2160):
 				self.label.setText(self.label.text() + "\nImage isn't 7680x2160. Resizing image to 7680x2160...")
-				img = img.resize((7680, 2160), Image.ANTIALIAS)
+				img = img.resize((7680, 2160))
 				
 			self.label.setText(self.label.text() + "\nProcessing image...")
 			
 			cropped_img = img.crop((0,0,3840,2160))
-			cropped_img = cropped_img.resize((1920,1080), Image.ANTIALIAS)
+			cropped_img = cropped_img.resize((1920,1080))
 
 			final_img = img.crop((1920,0,7680,2160))
 			final_img.paste(cropped_img)
